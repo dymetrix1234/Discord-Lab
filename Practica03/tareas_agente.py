@@ -29,10 +29,40 @@ def listar_tareas(lista_tareas):
 
 def eliminar_tarea(lista_tareas, indice):
     '''
-    Elimina una tarea de la lista si el indice es valido
+    Elimina una tarea por su numero de indice
     '''
-    if indice < 1 or indice > len(lista_tareas):
-        return "Indice invalido."
+    if not indice.isdigit():
+        return "Error: El índice debe ser un número."
     
-    tarea_eliminada = lista_tareas.pop(indice - 1)
+    indice = int(indice)-1
+
+    #agregamos la logica para preguntar si el elemento esta en la lista y eliminarla
+
+    if 0 <= indice < len(lista_tareas):
+        tarea_eliminada = lista_tareas.pop(indice)
+    else:
+        return "Error: No existe la tarea"
     return f"Tarea '{tarea_eliminada}' eliminada exitosamente."
+
+def main ():
+    tareas = []
+    PREFIJO = "!"
+
+    print ("bienvenido al gestor de tareas")
+    activa = True
+    while activa:
+        entrada = input(">>> ").strip()
+        if not entrada.startswith(PREFIJO):
+            print("Error: Comando no reconocido.")
+            continue
+
+        #procesamiento de la enrada
+        cuerpo = entrada[len(PREFIJO):].split(maxsplit=1)
+        comando = cuerpo[0].lower()
+        argumento = cuerpo[1] if len(cuerpo) > 1 else ""
+
+        #seleccion de accion
+        if comando == "add":
+            resultado = agregar_tarea(tareas, argumento)
+            print
+            
