@@ -1,53 +1,80 @@
-import sys
-from pathlib import Path
+import discord
+import os
+from dotenv import load_dotenv
+from agente_gestor_logica import analizar_comando
 
-root = Path(__file__).resolve().parent
-if str(root) not in sys.path:
-    sys.path.insert(0, str(root))
+ruta_script = os.path.dirname(os.path.abspath(__file__))
+ruta_env = os.path.join(ruta_script, '.env')
+load_dotenv(dotenv_path=ruta_env)
 
-import procesador
+TOKEN = os.getenv('DISCORD_TOKEN')
 
+def mostrar_bienvenida():
+    return (
+        "📜 **Bot de Operaciones y Lógica V2 (Modo Estructurado)**\n"
+        "📜 Primeros pasos Agente Discord UX:\n"
+        "📜 Escriba `!Exit` para salir del Agente.\n"
+        "📜 Escriba `!Inicio` para mostrar esta bienvenida nuevamente.\n\n"
+        "⌨️ **Contrato de Comandos Disponibles:**\n"
+        "• `!validar_identificador [variable]` - Reglas de nombrado PEP 8\n"
+        "• `!evaluar_operadores [expresion]` - Cortocircuito y tablas de verdad\n"
+        "• `!diagnosticar_tipado [valor]` - Análisis de tipado dinámico\n"
+        "• `!evaluar_for [codigo]` - Validación estructural con AST\n"
+        "• `!monitorear_while [limite]` - Traza de control de bucles\n"
+        "• `!analizar_if [codigo]` - Jerarquía de indentación\n"
+        "• `!analizar_mutabilidad [estructura] [accion]` - Análisis de referencias\n"
+        "• `!gestionar_diccionario [clave] [valor]` - Reglas hash e inmutabilidad\n"
+        "• `!demostrar_slicing [inicio] [fin]` - Rebanado de secuencias\n"
+        "• `!simular_defensivo [tipo_error]` - Flujos try-except\n"
+        "• `!explicar_bloque` - Diagramación de orden completo de excepciones\n"
+        "• `!validar_propagacion [codigo]` - Simulación del stack trace\n"
+        "• `!historial` - Consulta los últimos 5 comandos de la sesión\n"
+    )
 
-def ejecutar_comando(comando, *args, **kwargs):
-    comando = comando.strip()
-    if not hasattr(procesador, comando):
-        raise ValueError(f"Comando no encontrado: {comando}")
+def main(entrada):
+    PREFIJO = "!"
+    if not entrada.startswith(PREFIJO):
+        if entrada: 
+            print("Recuerda usar '!' para comandos.")
+            return "Recuerda usar '!' para comandos."
 
-    funcion = getattr(procesador, comando)
-    if not callable(funcion):
-        raise ValueError(f"{comando} no es una función ejecutable")
+    cuerpo = entrada[len(PREFIJO):].split(maxsplit=1)
+    comando = cuerpo[0].lower()
 
-    return funcion(*args, **kwargs)
+    if comando == "exit":
+        print("Saliendo del gestor...")
+        return "Saliendo del gestor..."
+    elif comando == "inicio":
+        print(mostrar_bienvenida())
+        return mostrar_bienvenida()
+    else:
+        resultado = analizar_comando(entrada)
+        print(f"Resultado del procesamiento: {resultado}")
+        return resultado
 
+intents = discord.Intents.default()
+intents.message_content = True
+client = discord.Client(intents=intents)
 
-def procesar_linea(linea):
-    partes = linea.strip().split()
-    if not partes:
-        raise ValueError("Línea vacía")
+@client.event
+async def on_ready():
+    print(f'Sincronizado como {client.user} (ID: {client.user.id})')
+    print('------')
 
-    comando = partes[0]
-    argumentos = []
-    for valor in partes[1:]:
-        try:
-            argumentos.append(int(valor))
-        except ValueError:
-            try:
-                argumentos.append(float(valor))
-            except ValueError:
-                argumentos.append(valor)
+@client.event
+async def on_message(message):
+    if message.author == client.user:
+        return
 
-    return ejecutar_comando(comando, *argumentos)
+    print(f"Mensaje recibido de {message.author}: {message.content}")
 
+    if message.content.startswith('!'):
+        resultado = main(message.content)
+        print(f"Resultado enviado a Discord: {resultado}")
+        await message.channel.send(f"**Bot Procesador:**\n{resultado}")
 
 if __name__ == "__main__":
-    if len(sys.argv) <= 1:
-        print("Uso: python agente_procesdor_comandos.py <comando> [args...]")
-        sys.exit(1)
-
-    entrada = " ".join(sys.argv[1:])
-    try:
-        resultado = procesar_linea(entrada)
-        if resultado is not None:
-            print(resultado)
-    except Exception as error:
-        print(f"Error: {error}")
+    if TOKEN:
+        client.run(TOKEN)
+    else:
+        print(f"ERROR: No se encontró el TOKEN en la ruta: {ruta_env}")
